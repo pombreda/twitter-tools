@@ -1,0 +1,19 @@
+redis database
+/var/lib/redis/dump.rdb
+
+redis commands
+
+# No. of tweets
+scard tweets:netbook
+
+# oldest tweet date
+ZRANGE tweet_dates:netbook 0 0 WITHSCORES
+
+# newest tweet date
+ZRANGE tweet_dates:netbook -1 -1 WITHSCORES
+
+# 100 most common word triples
+ZRANGE word_triples:netbook -100 -1 WITHSCORES
+
+# 100 most common word pairs
+ZRANGE word_pairs:netbook -100 -1 WITHSCORES
