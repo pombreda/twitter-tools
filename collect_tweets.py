@@ -62,28 +62,31 @@ def search_tweets(query, query_count, rpp):
     twitter_search = twitter.Twitter(domain="search.twitter.com")
     for page in range(1, query_count + 1):
         tweets_seen_before = 0
-        result = twitter_search.search(q=query, rpp=rpp, page=page)
-        for tweet in result['results']:
-            # make sure the tweet has not been processed yet
-            if redis_server.sadd("tweet_ids:%s" % query, tweet['id']):
-                # store tweet in a set of tweets
-                redis_server.sadd("tweets:%s" % query, tweet)
+        try:
+            result = twitter_search.search(q=query, rpp=rpp, page=page)
+            for tweet in result['results']:
+                # make sure the tweet has not been processed yet
+                if redis_server.sadd("tweet_ids:%s" % query, tweet['id']):
+                    # store tweet in a set of tweets
+                    redis_server.sadd("tweets:%s" % query, tweet)
 
-                # store tweet dates in an ordered set of dates
-                created_at = tweet['created_at']
-                created_struct_time = time.strptime(created_at, "%a, %d %b %Y %H:%M:%S +0000")
-                unixtime = calendar.timegm(created_struct_time)
-                # the order of args to zadd is reversed in redis-py from that in redis
-                # https://github.com/andymccurdy/redis-py/issues/70
-                redis_server.zadd("tweet_dates:%s" % query, created_at, unixtime)
+                    # store tweet dates in an ordered set of dates
+                    created_at = tweet['created_at']
+                    created_struct_time = time.strptime(created_at, "%a, %d %b %Y %H:%M:%S +0000")
+                    unixtime = calendar.timegm(created_struct_time)
+                    # the order of args to zadd is reversed in redis-py from that in redis
+                    # https://github.com/andymccurdy/redis-py/issues/70
+                    redis_server.zadd("tweet_dates:%s" % query, created_at, unixtime)
 
-                proc_tweet(tweet, query)
-            else:
-                tweets_seen_before += 1
-                # Stop if all tweets on a page were processed in a previous request
-                if tweets_seen_before == rpp:
-                    print "All tweets on page %d seen before, stop processing" % page
-                    return
+                    proc_tweet(tweet, query)
+                else:
+                    tweets_seen_before += 1
+                    # Stop if all tweets on a page were processed in a previous request
+                    if tweets_seen_before == rpp:
+                        print "All tweets on page %d seen before, stop processing" % page
+                        return
+        except:
+            continue
 
 if len(sys.argv) > 1:
     # Clients may request up to 1,500 statuses via the page and rpp parameters for the search method
