@@ -64,6 +64,9 @@ def search_tweets(query, query_count, rpp):
         tweets_seen_before = 0
         try:
             result = twitter_search.search(q=query, rpp=rpp, page=page)
+        except:
+            continue
+        else:
             for tweet in result['results']:
                 # make sure the tweet has not been processed yet
                 if redis_server.sadd("tweet_ids:%s" % query, tweet['id']):
@@ -85,8 +88,6 @@ def search_tweets(query, query_count, rpp):
                     if tweets_seen_before == rpp:
                         print "All tweets on page %d seen before, stop processing" % page
                         return
-        except:
-            continue
 
 if len(sys.argv) > 1:
     # Clients may request up to 1,500 statuses via the page and rpp parameters for the search method
