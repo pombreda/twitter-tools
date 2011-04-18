@@ -12,7 +12,8 @@ to_users = {}
 mentioned_users = {}
 
 tpl_field_value = "u'%s': u?'?(.*?)'?, u'%s': "
-
+tweet_fields = ['iso_language_code', 'to_user_id_str', 'text', 'from_user_id_str', 'profile_image_url', 'id', 'source', 'id_str', 'from_user', 'from_user_id', 'to_user_id', 'geo', 'created_at', 'metadata']
+    
 def tweet_str_to_dict(s):
     """Convert python tweet string to dict
     
@@ -21,13 +22,13 @@ def tweet_str_to_dict(s):
     codes for non ASCII chars, which poses problems to json.loads. This is a
     workaround.
     """
-    tweet_dict = {}
-    fields = ['iso_language_code', 'to_user_id_str', 'text', 'from_user_id_str', 'profile_image_url', 'id', 'source', 'id_str', 'from_user', 'from_user_id', 'to_user_id', 'geo', 'created_at', 'metadata']
 
-    for i in range(0,len(fields)-1):
+    global tpl_field_value, tweet_fields
+    tweet_dict = {}
+    for i in range(0,len(tweet_fields)-1):
         # TODO convert hex codes
-        curr_field = fields[i]
-        regex = tpl_field_value % (curr_field, fields[i+1])
+        curr_field = tweet_fields[i]
+        regex = tpl_field_value % (curr_field, tweet_fields[i+1])
         m = re.search(regex, s)
         if m is not None:
             tweet_dict[curr_field] = m.group(1)
