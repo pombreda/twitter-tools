@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
-import json
 import twitter_text
 import redis
+import re
 
 redis_server = redis.Redis("localhost")
 urls = {}
@@ -11,18 +11,28 @@ from_users = {}
 to_users = {}
 mentioned_users = {}
 
-fields = ['iso_language_code', 'to_user_id_str', 'text', 'from_user_id_str', 'profile_image_url', 'id', 'source', 'id_str', 'from_user', 'from_user_id', 'to_user_id', 'geo', 'created_at', 'metadata']
+tpl_field_value = "u'%s': u?'?(.*?)'?, u'%s': "
 
-print fields
+def tweet_str_to_dict(s):
+    """Convert python tweet string to dict
+    
+    Redis stores JSON strings as Python strings in sets using single quotes, not 
+    quoting None, integers and long integers, and using hexadecimal character 
+    codes for non ASCII chars, which poses problems to json.loads. This is a
+    workaround.
+    """
+    tweet_dict = {}
+    fields = ['iso_language_code', 'to_user_id_str', 'text', 'from_user_id_str', 'profile_image_url', 'id', 'source', 'id_str', 'from_user', 'from_user_id', 'to_user_id', 'geo', 'created_at', 'metadata']
 
-def fix_str(s):
-    # FIXME there must be a better way
-    #return s.replace("u'", '"').replace("':", '":').replace("',", '",').replace("'}", '"}').replace(': None,', ': "None",').replace('L, "', ', "').replace('\\x', '').replace(': u"', ': "')
-    kvs = s[1:-2].split(", ", 2)
-    for k in kvs:
-        kv = k.split(": ", 2)
-        print kv[0]
-        print kv[1]
+    for i in range(0,len(fields)-1):
+        # TODO convert hex codes
+        curr_field = fields[i]
+        regex = tpl_field_value % (curr_field, fields[i+1])
+        m = re.search(regex, s)
+        if m is not None:
+            tweet_dict[curr_field] = m.group(1)
+
+    return tweet_dict
 
 # https://github.com/ptwobrussell/Mining-the-Social-Web/blob/master/python_code/the_tweet__extract_tweet_entities.py
 def getEntities(tweet):
@@ -60,7 +70,7 @@ if len(sys.argv) > 1:
     subset = set(tweets[0:1])
 
     for t in subset:
-        print t
+        print tweet_str_to_dict(t)
 #        jt = json.loads(fix_str(t))
 #        print jt['text']
 #        print getEntities(jt)
