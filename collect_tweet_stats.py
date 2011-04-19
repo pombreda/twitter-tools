@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
-# Deprecated: use collect_tweet_stats when ready
 import sys
 import re
 import time
 import calendar
 import twitter
+import twitter_text
 import redis
+
+# TODO store tweets in mongodb?
 
 redis_server = redis.Redis("localhost")
 re_non_word = re.compile("\W+")
 re_uri = re.compile("https?://\S+")
+
 
 def get_phrase_list(words, length):
     """Get a list of word lists from given list of words of the given length.
@@ -21,17 +24,63 @@ def get_phrase_list(words, length):
     else:
         return None
 
-def proc_tweet(tweet, query):
-    """Process a single tweet.
-    
-    Determines single words, word pairs, and word triples and stores them with
-    counts in corresponding ordered sets in redis."""
 
-    global redis_server, re_non_word
+def get_entities(text):
+    """Extract entities from tweet text
+    
+    Extract urls, @mentions, hashtags from tweet text.
+    Function modified from:
+    https://github.com/ptwobrussell/Mining-the-Social-Web/blob/master/python_code/the_tweet__extract_tweet_entities.py
+    """
+
+    extractor = twitter_text.Extractor(text)
+
+    entities = {}
+    entities['user_mentions'] = []
+    for um in extractor.extract_mentioned_screen_names_with_indices():
+        entities['user_mentions'].append(um)
+
+    entities['hashtags'] = []
+    for ht in extractor.extract_hashtags_with_indices():
+
+        # massage field name to match production twitter api
+        ht['text'] = ht['hashtag']
+        del ht['hashtag']
+        entities['hashtags'].append(ht)
+
+    entities['urls'] = []
+    for url in extractor.extract_urls_with_indices():
+        entities['urls'].append(url)
+
+    return entities
+
+
+def store_entities(text, query)
+    """Store tweet entities in DB
+
+    Store urls, @mentions, hashtags and store them with counts in DB.
+    """
+
+    global redis_server
+    entities = get_entities(text)
+
+    #TODO store entities in sorted sets
+    #for e in entities:
+        #redis_server.zincrby("user_mentions:%s" % query, user_mention, 1)
+        #redis_server.zincrby("urls:%s" % query, url, 1)
+        #redis_server.zincrby("hashtags:%s" % query, hashtag, 1)
+
+
+def store_words(text, query):
+    """Store words and phrases in DB
+
+    Store single words, two and three words phrases with counts in DB.
+    """
+
+    global redis_server
 
     # remove URIs
-    text = re.sub(re_uri,"", tweet['text'])
-
+    text = re.sub(re_uri,"", text)
     # lower case string and remove non word characters
     text = re.sub(re_non_word, " ",  text.lower()).strip()
 
@@ -52,6 +101,28 @@ def proc_tweet(tweet, query):
     if triples is not None:
         for word_triple in get_phrase_list(words, 3):
             print word_triple, redis_server.zincrby("word_triples:%s" % query, word_triple, 1)
+
+
+def proc_tweet(tweet, query):
+    """Process a single tweet.
+    
+    Determines single words, word pairs, and word triples and stores them with
+    counts in corresponding ordered sets in redis."""
+
+    global redis_server, re_non_word
+
+    text = tweet['text']
+
+    # store tweet entities
+    store_entities(text)
+
+    # store from_user
+    #redis_server.zincrby("from_user_ids:%s" % query, from_user_id, 1)
+
+    # store to_user
+    #if to_user_ids is not None:
+        #redis_server.zincrby("to_user_ids:%s" % query, to_user_id, 1)
+
 
 def search_tweets(query, query_count, rpp):
     """Searches twitter for given query and collects results of processing in redis.
@@ -89,6 +160,7 @@ def search_tweets(query, query_count, rpp):
                     if tweets_seen_before == rpp:
                         print "All tweets on page %d seen before, stop processing" % page
                         return
+
 
 if len(sys.argv) > 1:
     # Clients may request up to 1,500 statuses via the page and rpp parameters for the search method
