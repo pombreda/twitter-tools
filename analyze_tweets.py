@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import sys
 import redis
 import re
@@ -50,21 +51,25 @@ def print_format_stats(tweet_stats):
         print "\n######### Index: %s #########\n" % k
 
         k_stats = tweet_stats[k]
-        k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)[0:100]
+        k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)[0:10]
 
-        for val, cnt in k_stats_sorted:
-            print "%-50s %5d" % (val, cnt)
+        cnt = 0
+        for val, card in k_stats_sorted:
+            cnt += 1
+            print "%4d %-60s %5d" % (cnt, val, card)
 
 
 if len(sys.argv) > 1:
-    tweet_set_name = "tweets:%s" % sys.argv[1]
+    query = sys.argv[1]
+    tweet_set_name = "tweets:%s" % query
     ts = TweetStats()
+    ts.write_stats(os.curdir)
 
 #    tweets = list(redis_server.smembers("tweets:%s" % query))
 #    subset = set(tweets[0:10])
 #    for t in subset:
 
-    for i in range(10000):
+    for i in range(1000):
         tweet = redis_server.srandmember(tweet_set_name)
         ts.update(tweet_str_to_dict(tweet))
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 import re
 import twitter_text
 
@@ -22,6 +23,15 @@ class TweetStats(dict):
 
 
     # Custom functions
+
+    def write_stats(self, directory):
+        """Write statistics for each index to files in several formats."""
+
+        target = os.path.join(directory, 'tweet_stats')
+
+        if not os.path.exists(target):
+            os.makedirs(target)
+
 
     def set_text(self, tweet):
         """Set text property to normalized text of tweet."""
@@ -56,6 +66,8 @@ class TweetStats(dict):
         else:
             stats[idx][key] = 1
 
+    def get_index_from_list(self, l):
+        return " ".join(l)
 
     def update_word_stats(self, tweet):
 
@@ -69,13 +81,13 @@ class TweetStats(dict):
         pairs = self.get_phrase_list(words, 2)
         if pairs is not None:
             for word_pair in pairs:
-                self.update_stats('word_pairs', str(word_pair))
+                self.update_stats('word_pairs', self.get_index_from_list(word_pair))
 
         # process 3 word lists
         triples = self.get_phrase_list(words, 3)
         if triples is not None:
             for word_triple in triples:
-                self.update_stats('word_triples', str(word_triple))
+                self.update_stats('word_triples', self.get_index_from_list(word_triple))
 
 
     def get_entities(self, text):
