@@ -93,13 +93,13 @@ def store_words(text, query):
     # process 2 word lists
     pairs = get_phrase_list(words, 2)
     if pairs is not None:
-        for word_pair in get_phrase_list(words, 2):
+        for word_pair in pairs:
             print word_pair, redis_server.zincrby("word_pairs:%s" % query, word_pair, 1)
 
     # process 3 word lists
     triples = get_phrase_list(words, 3)
     if triples is not None:
-        for word_triple in get_phrase_list(words, 3):
+        for word_triple in triples:
             print word_triple, redis_server.zincrby("word_triples:%s" % query, word_triple, 1)
 
 
