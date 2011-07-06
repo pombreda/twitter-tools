@@ -8,6 +8,7 @@ class TweetStats(dict):
     # Object properties
 
     text = ''
+    tweet_count = 0
     re_non_word = re.compile("\W+")
     re_uri = re.compile("https?://\S+")
 
@@ -16,7 +17,11 @@ class TweetStats(dict):
     def __init__(self):
         self['stats'] = {}
 
+    def __len__(self):
+        return self.tweet_count
+
     def update(self, tweet):
+        self.tweet_count += 1
         self.set_text(tweet)
         self.update_word_stats(tweet)
         self.update_entities_stats(tweet)
@@ -28,7 +33,6 @@ class TweetStats(dict):
         """Write statistics for each index to files in several formats."""
 
         target = os.path.join(directory, 'tweet_stats')
-
         if not os.path.exists(target):
             os.makedirs(target)
 

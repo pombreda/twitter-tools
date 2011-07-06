@@ -24,7 +24,7 @@ def tweet_str_to_dict(s):
 
     global tpl_field_value, tweet_fields, re_hex_code
     tweet_dict = {}
-    for i in range(0,len(tweet_fields)-1):
+    for i in range(0, len(tweet_fields)-1):
         curr_field = tweet_fields[i]
         regex = tpl_field_value % (curr_field, tweet_fields[i+1])
         m = re.search(regex, s)
@@ -48,11 +48,11 @@ def print_format_stats(tweet_stats):
     """Print formatted tweet_stats."""
 
     for k in tweet_stats:
-        print "\n######### Index: %s #########\n" % k
-
         k_stats = tweet_stats[k]
-        k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)[0:10]
 
+        print "\n######### Index: %s Count: %d #########\n" % (k, len(k_stats))
+
+        k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)[0:10]
         cnt = 0
         for val, card in k_stats_sorted:
             cnt += 1
@@ -73,6 +73,7 @@ if len(sys.argv) > 1:
         tweet = redis_server.srandmember(tweet_set_name)
         ts.update(tweet_str_to_dict(tweet))
 
+    print "\n######### Tweet Count: %d #########\n" % len(ts)
     print_format_stats(ts['stats'])
 
 else:
