@@ -9,6 +9,7 @@ class TweetStats(dict):
 
     text = ''
     tweet_count = 0
+    tweet_fields = ['iso_language_code', 'to_user_id_str', 'source', 'from_user', 'to_user_id', 'geo', 'created_at', 'metadata']
     re_non_word = re.compile("\W+")
     re_uri = re.compile("https?://\S+")
 
@@ -16,13 +17,19 @@ class TweetStats(dict):
 
     def __init__(self):
         self['stats'] = {}
+        # init fields
+        for f in self.tweet_fields:
+            self['stats'][f] = {}
+
 
     def __len__(self):
         return self.tweet_count
 
+
     def update(self, tweet):
         self.tweet_count += 1
         self.set_text(tweet)
+        self.update_field_stats(tweet)
         self.update_word_stats(tweet)
         self.update_entities_stats(tweet)
 
@@ -70,11 +77,25 @@ class TweetStats(dict):
         else:
             stats[idx][key] = 1
 
+
     def get_index_from_list(self, l):
         return " ".join(l)
 
-    def update_word_stats(self, tweet):
 
+    def update_field_stats(self, tweet):
+        stats = self['stats']
+        for f in self.tweet_fields:
+            if tweet.has_key(f):
+                f_val = tweet[f]
+                if f_val is None:
+                    continue
+                if stats[f].has_key(f_val):
+                    stats[f][f_val] += 1
+                else:
+                    stats[f][f_val] = 1
+
+
+    def update_word_stats(self, tweet):
         words = self.text.split()
 
         # process single words
