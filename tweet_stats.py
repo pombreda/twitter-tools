@@ -1,25 +1,27 @@
 # -*- coding: utf-8 -*-
 import os
 import re
+import operator
 import twitter_text
 
 class TweetStats(dict):
 
     # Object properties
 
+    stats = {}
     text = ''
     tweet_count = 0
     tweet_fields = ['iso_language_code', 'to_user_id_str', 'source', 'from_user', 'to_user_id', 'geo', 'created_at', 'metadata']
+    formats = ['html', 'json', 'txt']
     re_non_word = re.compile("\W+")
     re_uri = re.compile("https?://\S+")
 
     # Override dict functions
 
     def __init__(self):
-        self['stats'] = {}
         # init fields
         for f in self.tweet_fields:
-            self['stats'][f] = {}
+            self.stats[f] = {}
 
 
     def __len__(self):
@@ -36,12 +38,48 @@ class TweetStats(dict):
 
     # Custom functions
 
+    def write_file(self, directory, name, content):
+        """Write content to file.
+
+        An existing file with the same name will be erased.
+        """
+
+        try:
+            f = open(os.path.join(directory, name), 'w')
+            f.write(content)
+            f.close()
+        except:
+            print "Content not written to file: %s" % name
+
+
     def write_stats(self, directory):
         """Write statistics for each index to files in several formats."""
 
-        target = os.path.join(directory, 'tweet_stats')
-        if not os.path.exists(target):
-            os.makedirs(target)
+        target_dir = os.path.join(directory, 'tweet_stats')
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir)
+
+        # general stats
+        general_stats = ['# Index Counts']
+        general_stats.append("%-20s: %9d" % ('tweets', len(self)))
+
+        for k in self.stats:
+            k_stats = self.stats[k]
+
+            general_stats.append("%-20s: %9d" % (k, len(k_stats)))
+
+            lines = []
+
+            # Sort by frequency words, pairs, triples, urls etc.
+            k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)[0:10]
+            cnt = 0
+            for val, card in k_stats_sorted:
+                cnt += 1
+                lines.append("%4d %-60s %5d" % (cnt, val, card))
+            self.write_file(target_dir, "%s.txt" % k, "\n".join(lines))
+
+        file_name = 'general.txt'
+        self.write_file(target_dir, file_name, "\n".join(general_stats))
 
 
     def set_text(self, tweet):
@@ -69,7 +107,9 @@ class TweetStats(dict):
 
 
     def update_stats(self, idx, key):
-        stats = self['stats']
+        """Update statistics for given index and key."""
+
+        stats = self.stats
         if not stats.has_key(idx):
             stats[idx] = {}
         if stats[idx].has_key(key):
@@ -79,11 +119,15 @@ class TweetStats(dict):
 
 
     def get_index_from_list(self, l):
+        """Generate and return a hashable index."""
+
         return " ".join(l)
 
 
     def update_field_stats(self, tweet):
-        stats = self['stats']
+        """Update statistics for tweet_fields."""
+
+        stats = self.stats
         for f in self.tweet_fields:
             if tweet.has_key(f):
                 f_val = tweet[f]
@@ -96,6 +140,8 @@ class TweetStats(dict):
 
 
     def update_word_stats(self, tweet):
+        """Update statistics for words, word pairs and triples."""
+
         words = self.text.split()
 
         # process single words
@@ -159,7 +205,7 @@ class TweetStats(dict):
                     if k.has_key('text'):
                         v = k['text'].lower()
                     if v:
-                        tweet_stats = self['stats']
+                        tweet_stats = self.stats
                         if not tweet_stats.has_key(ent):
                             tweet_stats[ent] = {}
                         if not tweet_stats[ent].has_key(v):

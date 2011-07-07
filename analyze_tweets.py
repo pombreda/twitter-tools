@@ -3,7 +3,6 @@ import os
 import sys
 import redis
 import re
-import operator
 from tweet_stats import TweetStats
 
 redis_server = redis.Redis("localhost")
@@ -14,7 +13,7 @@ tweet_fields = ['iso_language_code', 'to_user_id_str', 'text', 'from_user_id_str
 
 
 def tweet_str_to_dict(s):
-    """Convert python tweet string to dict
+    """Convert python tweet string to dict.
 
     Redis stores JSON strings as Python strings in sets using single quotes, not 
     quoting None, integers and long integers, and using hexadecimal character 
@@ -23,7 +22,7 @@ def tweet_str_to_dict(s):
     """
 
     global tpl_field_value, tweet_fields, re_hex_code
-    tweet_dict = {}
+    tweet = {}
     for i in range(0, len(tweet_fields)-1):
         curr_field = tweet_fields[i]
         regex = tpl_field_value % (curr_field, tweet_fields[i+1])
@@ -39,31 +38,15 @@ def tweet_str_to_dict(s):
             if "None" == val:
                 val = None
 
-            tweet_dict[curr_field] = val
+            tweet[curr_field] = val
 
-    return tweet_dict
-
-
-def print_format_stats(tweet_stats):
-    """Print formatted tweet_stats."""
-
-    for k in tweet_stats:
-        k_stats = tweet_stats[k]
-
-        print "\n######### Index: %s Count: %d #########\n" % (k, len(k_stats))
-
-        k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)[0:10]
-        cnt = 0
-        for val, card in k_stats_sorted:
-            cnt += 1
-            print "%4d %-60s %5d" % (cnt, val, card)
+    return tweet
 
 
 if len(sys.argv) > 1:
     query = sys.argv[1]
     tweet_set_name = "tweets:%s" % query
     ts = TweetStats()
-    ts.write_stats(os.curdir)
 
 #    tweets = list(redis_server.smembers("tweets:%s" % query))
 #    subset = set(tweets[0:10])
@@ -73,8 +56,7 @@ if len(sys.argv) > 1:
         tweet = redis_server.srandmember(tweet_set_name)
         ts.update(tweet_str_to_dict(tweet))
 
-    print "\n######### Tweet Count: %d #########\n" % len(ts)
-    print_format_stats(ts['stats'])
+    ts.write_stats(os.curdir)
 
 else:
     print 'Usage: %s "query string"' % sys.argv[0]
