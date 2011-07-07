@@ -11,7 +11,7 @@ class TweetStats(dict):
     stats = {}
     text = ''
     tweet_count = 0
-    tweet_fields = ['iso_language_code', 'to_user_id_str', 'source', 'from_user', 'to_user_id', 'geo', 'created_at', 'metadata']
+    tweet_fields = ['iso_language_code', 'source', 'from_user', 'to_user_id', 'geo', 'created_at', 'metadata']
     formats = ['html', 'json', 'txt']
     re_non_word = re.compile("\W+")
     re_uri = re.compile("https?://\S+")
@@ -66,16 +66,17 @@ class TweetStats(dict):
         for k in self.stats:
             k_stats = self.stats[k]
 
-            general_stats.append("%-20s: %9d" % (k, len(k_stats)))
-
+            rank = 0
             lines = []
 
-            # Sort by frequency words, pairs, triples, urls etc.
-            k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)[0:10]
-            cnt = 0
+            general_stats.append("%-20s: %9d" % (k, len(k_stats)))
+
+            # Sort by frequency of words, pairs, triples, urls etc.
+            k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)[0:10000]
+
             for val, card in k_stats_sorted:
-                cnt += 1
-                lines.append("%4d %-60s %5d" % (cnt, val, card))
+                rank += 1
+                lines.append("%4d %-60s %5d" % (rank, val, card))
             self.write_file(target_dir, "%s.txt" % k, "\n".join(lines))
 
         file_name = 'general.txt'
