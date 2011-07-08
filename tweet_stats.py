@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+# TODO set text and text_normalized properties and use them
+# consider not updating stats if text is false
 import os
 import re
 import operator
@@ -9,6 +11,7 @@ class TweetStats(dict):
     # Object properties
 
     stats = {}
+    stats_summary = []
     text = ''
     tweet_count = 0
     tweet_fields = ['iso_language_code', 'source', 'from_user', 'to_user_id', 'geo', 'created_at', 'metadata']
@@ -60,31 +63,38 @@ class TweetStats(dict):
             os.makedirs(target_dir)
 
         # general stats
-        general_stats = ['# Index Counts']
-        general_stats.append("%-20s: %9d" % ('tweets', len(self)))
+        self.stats_summary.append("%-30s\t%12d\n" % ('Number of tweets', len(self)))
+        self.stats_summary.append('%-30s\t%-12s\t%-12s' % ('Index', 'Type count', 'Token count'))
 
         for k in self.stats:
             k_stats = self.stats[k]
 
             rank = 0
+            token_count = 0
             lines = []
 
-            general_stats.append("%-20s: %9d" % (k, len(k_stats)))
-
             # Sort by frequency of words, pairs, triples, urls etc.
-            k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)[0:10000]
+            k_stats_sorted = sorted(k_stats.iteritems(), key=operator.itemgetter(1), reverse=True)
 
             for val, card in k_stats_sorted:
                 rank += 1
+                token_count += card
                 lines.append("%4d %-60s %5d" % (rank, val, card))
+
             self.write_file(target_dir, "%s.txt" % k, "\n".join(lines))
 
-        file_name = 'general.txt'
-        self.write_file(target_dir, file_name, "\n".join(general_stats))
+            # update summary with index name and corresponding type and token counts
+            self.stats_summary.append('%-30s\t%12d\t%12d' % (k, len(k_stats), token_count))
+
+        # write summary info
+        self.write_file(target_dir, 'general.txt', "\n".join(self.stats_summary))
 
 
     def set_text(self, tweet):
         """Set text property to normalized text of tweet."""
+
+        if not tweet.has_key('text'):
+            return
 
         text = tweet['text']
 
@@ -143,6 +153,9 @@ class TweetStats(dict):
     def update_word_stats(self, tweet):
         """Update statistics for words, word pairs and triples."""
 
+        if not self.text:
+            return
+
         words = self.text.split()
 
         # process single words
@@ -193,6 +206,9 @@ class TweetStats(dict):
 
     def update_entities_stats(self, tweet):
         """Process tweet entities and add them to tweet_stats dict."""
+
+        if not tweet.has_key('text'):
+            return
 
         entities = self.get_entities(tweet['text'])
         for ent in entities:

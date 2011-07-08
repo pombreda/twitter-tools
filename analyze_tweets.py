@@ -48,10 +48,10 @@ if len(sys.argv) > 1:
     tweet_set_name = "tweets:%s" % query
     ts = TweetStats()
 
-    tweets = list(redis_server.smembers("tweets:%s" % query))
-    for tweet in tweets:
-#    for i in range(1000):
-#        tweet = redis_server.srandmember(tweet_set_name)
+#    tweets = list(redis_server.smembers("tweets:%s" % query))
+#    for tweet in tweets:
+    for i in range(1000):
+        tweet = redis_server.srandmember(tweet_set_name)
         ts.update(tweet_str_to_dict(tweet))
 
     ts.write_stats(os.curdir)
