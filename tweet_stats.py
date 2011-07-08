@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # TODO set text and text_normalized properties and use them
+# set type and token counts on update not on write
 # consider not updating stats if text is false
 import os
 import re

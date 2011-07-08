@@ -4,6 +4,9 @@ import sys
 import redis
 import re
 from tweet_stats import TweetStats
+import time
+
+time_start = time.time()
 
 redis_server = redis.Redis("localhost")
 
@@ -48,13 +51,16 @@ if len(sys.argv) > 1:
     tweet_set_name = "tweets:%s" % query
     ts = TweetStats()
 
-#    tweets = list(redis_server.smembers("tweets:%s" % query))
-#    for tweet in tweets:
-    for i in range(1000):
-        tweet = redis_server.srandmember(tweet_set_name)
+    tweets = list(redis_server.smembers("tweets:%s" % query))
+    for tweet in tweets:
+#    for i in range(1000):
+#        tweet = redis_server.srandmember(tweet_set_name)
         ts.update(tweet_str_to_dict(tweet))
 
     ts.write_stats(os.curdir)
+
+    time_end = time.time() - time_start
+    print 'Script runtime: %fs\t%fmin \n' % (time_end, time_end / 60)
 
 else:
     print 'Usage: %s "query string"' % sys.argv[0]
