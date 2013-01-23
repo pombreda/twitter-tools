@@ -1,0 +1,7 @@
+*.pyc
+*.html
+*.csv
+*.sparql
+*.png
+*.jpg
+*.json
