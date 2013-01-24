@@ -28,6 +28,7 @@ id_file = basename + '_ids.json'
 tweet_file = basename + '_tweets.json'
 ids = get_data_from_file(id_file, {})
 tweets = get_data_from_file(tweet_file, [])
+new_tweet_count = 0
 
 config = ConfigParser.ConfigParser()
 config.readfp(open('collect_tweet_search.cfg'))
@@ -37,6 +38,7 @@ auth.set_access_token(config.get('twitter', 'ACCESS_TOKEN'), config.get('twitter
 api = tweepy.API(auth)
 
 def proc_tweets():
+    global new_tweet_count
     for page in tweepy.Cursor(api.search, search_term, include_entities=1, count=200, include_rts=True).pages():
         for tweet in page:
             # must use id string because of json encoding
@@ -46,8 +48,11 @@ def proc_tweets():
             td = tweet.__dict__
             td['created_at'] = str(td['created_at'])
             tweets.append(td)
+            new_tweet_count += 1
 
 proc_tweets()
+
+print('Added %d new tweets' % new_tweet_count)
 
 with open(id_file, 'w') as f: json.dump(ids, f)
 with open(tweet_file, 'w') as f: json.dump(tweets, f)
