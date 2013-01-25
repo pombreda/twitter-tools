@@ -12,12 +12,19 @@
 
 import os, sys, re, json, ConfigParser, tweepy
 
+dirsrc = os.path.dirname(os.path.abspath(__file__))
+
 def get_data_from_file(filename, default):
-    if os.path.exists(filename):
-        with open(filename, 'r') as f:
+    fname = os.path.join(dirsrc, filename)
+    if os.path.exists(fname):
+        with open(fname, 'r') as f:
             return json.load(f)
     return default
-        
+
+def write_data_to_file(filename, data):
+    fname = os.path.join(dirsrc, filename)
+    with open(fname, 'w') as f: json.dump(data, f)
+
 if 2 != len(sys.argv):
     print('Usage\n%s "search term"' % sys.argv[0])
     sys.exit()
@@ -31,7 +38,7 @@ tweets = get_data_from_file(tweet_file, [])
 new_tweet_count = 0
 
 config = ConfigParser.ConfigParser()
-config.readfp(open('collect_tweet_search.cfg'))
+config.readfp(open(os.path.join(dirsrc, 'collect_tweet_search.cfg')))
 
 auth = tweepy.OAuthHandler(config.get('twitter', 'CONSUMER_KEY'), config.get('twitter', 'CONSUMER_SECRET'))
 auth.set_access_token(config.get('twitter', 'ACCESS_TOKEN'), config.get('twitter', 'ACCESS_TOKEN_SECRET'))
@@ -54,5 +61,5 @@ proc_tweets()
 
 print('Added %d new tweets' % new_tweet_count)
 
-with open(id_file, 'w') as f: json.dump(ids, f)
-with open(tweet_file, 'w') as f: json.dump(tweets, f)
+write_data_to_file(id_file, ids)
+write_data_to_file(tweet_file, tweets)
